@@ -14,7 +14,7 @@ import numpy as np
 # 这里拟合后的目标函数只需要在这里修改，其他的都未调用，如果增减参数量也只用在此修改，但还需要修改后面的参数约束范围
 def objective_function(x, a, b, c, d, e):
     return a + b * np.exp(- x / c)
-
+test
 
 def read_data(file_path, sheet_name):
     data = pd.read_excel(file_path, sheet_name=sheet_name)
