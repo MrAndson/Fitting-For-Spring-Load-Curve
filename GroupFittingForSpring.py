@@ -57,6 +57,22 @@ def extract_and_split_data(file_path, sheet_name, n, name_line, x_col, y_col):
 
     return groups
 
+
+def truncate_data(data_groups, x_max=float('inf')):
+    # 给定数据data_groups，类型为（label，x_data, y_data)
+    # 给定截断上限x_max，默认值正无穷
+    # 处理数据，去除掉x大于x_max的x和y数据，输出截断后的数据，格式和输入类型相同
+    truncated_data = []
+
+    for label, x_data, y_data in data_groups:
+        mask = x_data <= x_max
+        truncated_x = x_data[mask]
+        truncated_y = y_data[mask]
+        truncated_data.append((label, truncated_x, truncated_y))
+
+    return truncated_data
+
+
 # 用于处理弹簧数据，将随时间的回弹力增长和下降段分开
 def split_growth_decline(data_groups):
     # 对给定数据，形式为（label，x_data, y_data)
@@ -239,8 +255,15 @@ def main():
     subplot_row, subplot_col = 5, 3     # 希望绘制的组图行列数
     output_file_name = "弹簧第一次数据拟合汇总.xlsx"   # 输出文件名称，会在OutputData中输出文件和图片，用文件名的时间区分
 
+    x_max = 3600                        # 数据处理截断用，x最大值
+
+    # 提取数据，并分类整合
     excel_data = extract_and_split_data(file_path, sheet_name, n, name_line, x_col, y_col)
-    split_data = split_growth_decline(excel_data)
+    # 截断数据
+    truncated_data = truncate_data(excel_data, x_max)
+    # 将弹簧上升段数据和下降段数据分离
+    split_data = split_growth_decline(truncated_data)
+    # 分离后的数据进行批量拟合
     fit_results = batch_fit(split_data)
     plot_group_fits(subplot_row, subplot_col, fit_results)
     print("Fitting finished")
