@@ -130,7 +130,7 @@ def batch_fit(split_data):
 # 绘制一个组合图，多行多列的组合图
 # 在每个图中绘制一组拟合结果
 def plot_group_fits(subplot_row, subplot_col, fit_results, flag=0):
-    output_dir = 'OutputFigure'
+    output_dir = 'OutputData'
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -170,7 +170,7 @@ def plot_group_fits(subplot_row, subplot_col, fit_results, flag=0):
             ax.legend(loc='upper right')
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
-    output_file = os.path.join(output_dir, datetime.now().strftime("%Y.%m.%d-%H%M%S") + '.png')
+    output_file = os.path.join(output_dir, datetime.now().strftime("%Y.%m.%d-%H%M%S") + 'FittingFigure.png')
     plt.savefig(output_file, dpi=600)   # , transparent=True # 这句话在论文里有用，导出图片不能看
     plt.show()
 
@@ -237,7 +237,7 @@ def main():
     x_col = 1                           # 需要的x数据在每组数据中的排序（从1开始）
     y_col = 4                           # 需要的y数据在每组数据中的排序（从1开始）
     subplot_row, subplot_col = 5, 3     # 希望绘制的组图行列数
-    output_file_name = "弹簧第一次数据拟合汇总.xlsx"   # 输出文件名称，会在OutputData中输出文件，OutputFigure中输出图片
+    output_file_name = "弹簧第一次数据拟合汇总.xlsx"   # 输出文件名称，会在OutputData中输出文件和图片，用文件名的时间区分
 
     excel_data = extract_and_split_data(file_path, sheet_name, n, name_line, x_col, y_col)
     split_data = split_growth_decline(excel_data)
