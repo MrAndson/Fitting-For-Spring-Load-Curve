@@ -171,64 +171,80 @@ def plot_group_fits(subplot_row, subplot_col, fit_results, flag=0):
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     output_file = os.path.join(output_dir, datetime.now().strftime("%Y.%m.%d-%H%M%S") + '.png')
-    plt.savefig(output_file, dpi=600) # , transparent=True # 这句话在论文里有用，导出图片不能看
+    plt.savefig(output_file, dpi=600)   # , transparent=True # 这句话在论文里有用，导出图片不能看
     plt.show()
 
 
 # 结果数据批量导出--------------------------------------------------------------------------------------------------------
-def save_fit_results_to_excel(output_file, fit_results):
+def save_fit_results_to_excel(output_file_name, fit_results):
+    # 定义输出文件路径
+    output_dir = 'OutputData'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    output_file_path = os.path.join(output_dir, datetime.now().strftime("%Y.%m.%d-%H%M%S-") + output_file_name)
+
     # 获取目标函数的参数信息
     params = inspect.signature(objective_function).parameters
     param_names = list(params.keys())[1:]  # 排除第一个参数x
 
     parameters_summary = []
 
-    with pd.ExcelWriter(output_file) as writer:
-        for label, popt, mse, r_squared, y_pred, x_data, y_data in fit_results:
-            data = {
-                'X': x_data,
-                'Y Original': y_data,
-                'Y Fitted': y_pred,
-                'MSE': mse,
-                'R^2': r_squared
-            }
+    # 创建一个字典来存储各个DataFrame，以便按顺序写入Excel
+    sheets = {}
 
-            # 添加动态参数列
-            for i, param_name in enumerate(param_names):
-                data[param_name] = popt[i]
+    for label, popt, mse, r_squared, y_pred, x_data, y_data in fit_results:
+        data = {
+            'X': x_data,
+            'Y Original': y_data,
+            'Y Fitted': y_pred,
+            'MSE': mse,
+            'R^2': r_squared
+        }
 
-            # 把拟合结果分别输出到新的sheet中
-            df = pd.DataFrame(data)
-            df.to_excel(writer, sheet_name=label[:31], index=False)     # 这里的31是excel限制表名长度不大于31
+        # 添加动态参数列
+        for i, param_name in enumerate(param_names):
+            data[param_name] = popt[i]
 
-            # 汇总参数
-            param_summary = {'Label': label, 'MSE': mse, 'R^2': r_squared}
-            for i, param_name in enumerate(param_names):
-                param_summary[param_name] = popt[i]
-            parameters_summary.append(param_summary)
+        df = pd.DataFrame(data)
+        sheets[label[:31]] = df
 
-        # 输出参数汇总表
-        pd.DataFrame(parameters_summary).to_excel(writer, sheet_name='Parameters Summary', index=False)
-        # 把结果整理输出到新的总sheet中
+        # 汇总参数
+        param_summary = {'Label': label, 'MSE': mse, 'R^2': r_squared}
+        for i, param_name in enumerate(param_names):
+            param_summary[param_name] = popt[i]
+        parameters_summary.append(param_summary)
+
+    # 参数汇总表放在第一位
+    sheets['Parameters Summary'] = pd.DataFrame(parameters_summary)
+
+    # 将所有DataFrame写入Excel文件
+    with pd.ExcelWriter(output_file_path) as writer:
+        # 先写入参数汇总表
+        sheets['Parameters Summary'].to_excel(writer, sheet_name='Parameters Summary', index=False)
+        # 再写入其他表
+        for sheet_name, df in sheets.items():
+            if sheet_name != 'Parameters Summary':
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
 
 
 # 主函数----------------------------------------------------------------------------------------------------------------
 def main():
-    file_path = "2024.06.06-数据整理.xlsx"
-    sheet_name = "测试数据"
-    n = 4
-    name_line = 3
-    x_col = 1
-    y_col = 4
-    subplot_row, subplot_col = 5, 3
-    output_file_path = "弹簧第一次数据拟合汇总.xlsx"
+    file_path = "2024.06.06-数据整理.xlsx"  # 数据来源表格（要求在同一根目录下）
+    sheet_name = "测试数据"              # 数据来源sheet
+    n = 4                               # 每组数据列数
+    name_line = 3                       # 表头行数
+    x_col = 1                           # 需要的x数据在每组数据中的排序（从1开始）
+    y_col = 4                           # 需要的y数据在每组数据中的排序（从1开始）
+    subplot_row, subplot_col = 5, 3     # 希望绘制的组图行列数
+    output_file_name = "弹簧第一次数据拟合汇总.xlsx"   # 输出文件名称，会在OutputData中输出文件，OutputFigure中输出图片
 
     excel_data = extract_and_split_data(file_path, sheet_name, n, name_line, x_col, y_col)
     split_data = split_growth_decline(excel_data)
     fit_results = batch_fit(split_data)
     plot_group_fits(subplot_row, subplot_col, fit_results)
     print("Fitting finished")
-    save_fit_results_to_excel(output_file_path, fit_results)
+    save_fit_results_to_excel(output_file_name, fit_results)
     print("Save finished")
 
 
